@@ -4,13 +4,14 @@ import com.intellij.openapi.ide.CopyPasteManager
 import liveplugin.*
 import java.awt.datatransfer.DataFlavor
 import java.util.*
+import java.util.regex.Pattern
 
 /**
  * Jetbrains implementing this after 5yrs...
  * https://youtrack.jetbrains.com/issue/IDEA-188753/Copy-action-on-Gradle-Maven-dependency-in-project-view-should-copy-artifact-definition
  */
 
-if (!isIdeStartup) show("Loaded gradle 2 maven dependency paster... ^ ⌥ ⬆️G to run it")
+if (!isIdeStartup) show("Loaded gradle 2 maven dependency copier... ^ ⌥ ⬆️G to run it")
 
 registerAction(
     id = "Paste maven dependency",
@@ -25,16 +26,14 @@ registerAction(
             show(String.format("Contents: %s", contents))
 
             if (isValidGradleDependency(contents)) {
-                PluginUtil.log("Gradle dependency found!")
                 val mvnDeps = captureMavenDependencies()
-
-                PluginUtil.log("maven deps $mvnDeps")
 
                 executeCommand(project) {
                     val caretModel = event.editor?.caretModel
                     val lineStartOffset =
                         event.document!!.getLineStartOffset(caretModel!!.logicalPosition.line)
-                    event.document?.insertString(lineStartOffset, mvnDeps)
+                    val caretOffset = event.editor!!.caretModel.offset
+                    event.document?.insertString(caretOffset, mvnDeps)
 
                     caretModel.moveToOffset(caretModel.offset + 1)
                     PluginUtil.log("copied dependency $mvnDeps")
@@ -49,13 +48,8 @@ registerAction(
 
         }
 
-//        show("TODO: translate + paste to current project editor doc", "", NotificationType.WARNING)
-        // Document modifications must be done inside "commands" which will support undo/redo functionality.
-//        event.editor!!.document.executeCommand(event.project!!, description = "Paste dependency") {
-//            insertString(event.editor!!.caretModel.offset, translateDependency(event))
-//        }
     } else {
-        // TODO: disable action - log event to tell user of issue
+        show("Pasting gradle dependencies requires an open pom.xml file")
     }
 }
 
@@ -72,14 +66,11 @@ fun captureMavenDependencies(): CharSequence {
     val gradleDepCopy = CopyPasteManager.getInstance()
         .getContents<String>(DataFlavor.stringFlavor)
 
-    PluginUtil.log("processing clipboard $gradleDepCopy")
-
     val pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.MULTILINE)
     val matcher = pattern.matcher(gradleDepCopy!!)
 
     val mavenBuilder = StringBuilder()
 
-    PluginUtil.log("no of groups found = ")
     while (matcher.find()) {
         val type = matcher.group("type")
         val dependency = matcher.group("dep")
@@ -91,7 +82,10 @@ fun captureMavenDependencies(): CharSequence {
         var scope = "compile"
         when (type) {
             "api", "implementation" -> scope = "runtime"
-            "testImplementation", "testCompileOnly", "testCompileClasspath", "testRuntimeClasspath" -> {
+            "testImplementation",
+            "testCompileOnly",
+            "testCompileClasspath",
+            "testRuntimeClasspath" -> {
                 scope = "test"
             }
         }
@@ -108,8 +102,6 @@ fun captureMavenDependencies(): CharSequence {
 }
 
 fun isValidGradleDependency(contents: String): Boolean {
-    return true
-//    val GRADLE_REGEX =
-//        "\\s*dependencies\\s*\\{\\s*(?:(?:api|implementation|testImplementation|testRuntimeOnly|compileOnly|compileOnlyApi|runtimeOnly|testCompileOnly)\\s*'(?:.*)'\\s*)+\\s*\\}"
-//    return contents.matches(Regex.fromLiteral(GRADLE_REGEX));
+    var checkPattern = Pattern.compile("(\\s*(\\w+)\\s+'([A-Za-z0-9-:.]+)')+")
+    return contents.matches(checkPattern.toRegex())
 }
