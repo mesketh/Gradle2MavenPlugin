@@ -2,7 +2,7 @@
 
 __Problem__: I sometimes need to copy dependencies from Gradle projects quickly to a Maven project. 
 
-__Solution__: The Kotlin script `plugin.kts` contains a [LivePlugin](https://github.com/dkandalov/live-plugin) for conveniently performing a copy of a Gradle dependency to a Maven project, for example: 
+__Solution__: The Kotlin script `plugin.kts` contains a [LivePlugin](https://github.com/dkandalov/live-plugin) for conveniently performing a copy of a Gradle build dependency to a Maven dependency, for example: 
 
 ```
 dependencies {
