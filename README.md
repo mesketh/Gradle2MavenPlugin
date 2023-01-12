@@ -1,4 +1,4 @@
-# IntelliJ LivePlugin - Gradle dep to Maven dep translator
+# :electric_plug: IntelliJ LivePlugin - Gradle dep to Maven dep translator
 
 __Problem__: I sometimes need to copy dependencies from Gradle projects quickly to a Maven project. 
 
