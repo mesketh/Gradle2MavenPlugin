@@ -11,7 +11,7 @@ import java.util.regex.Pattern
  * https://youtrack.jetbrains.com/issue/IDEA-188753/Copy-action-on-Gradle-Maven-dependency-in-project-view-should-copy-artifact-definition
  */
 
-if (!isIdeStartup) show("Loaded gradle 2 maven dependency copier... ^ ⌥ ⬆️G to run it")
+if (!isIdeStartup) show("Loaded gradle 2 maven dependency paster... ^ ⌥ ⬆️G to run it")
 
 registerAction(
     id = "Paste maven dependency",
@@ -61,7 +61,7 @@ fun captureMavenDependencies(): CharSequence {
 
     val regex = "\\s+(?<type>\\w+)\\s+'(?<dep>[A-Za-z0-9-:.]+)'+"
     val mavenDepTemplate =
-        "<dependency>\n<groupId>%1%</groupId>\n<artifactId>%2%</artifactId>\n<scope>%3%</scope>\n</dependency>\n"
+        "<dependency>\n<groupId>%1%</groupId>\n<artifactId>%2%</artifactId>\n<version>%3%</version>\n<scope>%4%</scope>\n</dependency>\n"
 
     val gradleDepCopy = CopyPasteManager.getInstance()
         .getContents<String>(DataFlavor.stringFlavor)
@@ -79,6 +79,10 @@ fun captureMavenDependencies(): CharSequence {
 
         var mvnDep = mavenDepTemplate.replace("%1%", tokenizer.nextToken())
         mvnDep = mvnDep.replace("%2%", tokenizer.nextToken())
+        mvnDep = mvnDep.replace("%3%", tokenizer.nextToken())
+
+        PluginUtil.log("mvn dep = ${mvnDep}")
+
         var scope = "compile"
         when (type) {
             "api", "implementation" -> scope = "runtime"
@@ -89,7 +93,7 @@ fun captureMavenDependencies(): CharSequence {
                 scope = "test"
             }
         }
-        mavenBuilder.append(mvnDep.replace("%3%", scope))
+        mavenBuilder.append(mvnDep.replace("%4%", scope))
 
         PluginUtil.log("maven dependency added $mvnDep")
     }

@@ -43,7 +43,6 @@ Note: Replace the plugin.kts with the included `plugin.kts`.
 ## Suggested improvements
 
 - [] Format maven dependencies on paste
-- [] Pasting dep version!
 
 Enjoy :sparkles:
 
