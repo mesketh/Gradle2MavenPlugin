@@ -6,7 +6,7 @@ __Solution__: The Kotlin script `plugin.kts` contains a [LivePlugin](https://git
 
 ```
 dependencies {
-    testImplementation 'junit:˝junit:4.13'
+    testImplementation 'junit:junit:4.13'
     compileOnly 'org.apache.httpcomponents:httpclient:4.5.5'
     implementation 'org.apache.tomcat.embed:tomcat-embed-jasper:9.0.2'
 }
