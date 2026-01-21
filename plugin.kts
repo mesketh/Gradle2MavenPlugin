@@ -1,10 +1,12 @@
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.executeCommand
 import com.intellij.openapi.ide.CopyPasteManager
 import liveplugin.*
 import java.awt.datatransfer.DataFlavor
 import java.util.*
-import java.util.regex.Pattern
+import java.util.regex.Pattern.MULTILINE
+import java.util.regex.Pattern.compile
 
 /**
  * Jetbrains implementing this after 5yrs...
@@ -28,15 +30,16 @@ registerAction(
             if (isValidGradleDependency(contents)) {
                 val mvnDeps = captureMavenDependencies()
 
-                executeCommand(project) {
-                    val caretModel = event.editor?.caretModel
-                    val lineStartOffset =
-                        event.document!!.getLineStartOffset(caretModel!!.logicalPosition.line)
-                    val caretOffset = event.editor!!.caretModel.offset
-                    event.document?.insertString(caretOffset, mvnDeps)
+                PluginUtil.log("mvn deps captured: $mvnDeps")
 
-                    caretModel.moveToOffset(caretModel.offset + 1)
-                    PluginUtil.log("copied dependency $mvnDeps")
+                ApplicationManager.getApplication().runWriteAction {
+                    executeCommand(project) {
+                        val caretModel = event.editor?.caretModel
+                        val caretOffset = event.editor!!.caretModel.offset
+                        event.document?.insertString(caretOffset, mvnDeps)
+                        caretModel!!.moveToOffset(caretModel.offset + 1)
+                        PluginUtil.log("copied dependency $mvnDeps")
+                    }
                 }
 
             } else {
@@ -59,14 +62,14 @@ fun validatePreconditions(event: AnActionEvent): Boolean {
 
 fun captureMavenDependencies(): CharSequence {
 
-    val regex = "\\s+(?<type>\\w+)\\s+'(?<dep>[A-Za-z0-9-:.]+)'+"
+    val regex = "\\s*(?<type>\\w+)\\s+'(?<dep>[A-Za-z0-9-:.]+)'"
     val mavenDepTemplate =
         "<dependency>\n<groupId>%1%</groupId>\n<artifactId>%2%</artifactId>\n<version>%3%</version>\n<scope>%4%</scope>\n</dependency>\n"
 
     val gradleDepCopy = CopyPasteManager.getInstance()
         .getContents<String>(DataFlavor.stringFlavor)
 
-    val pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.MULTILINE)
+    val pattern = compile(regex, MULTILINE)
     val matcher = pattern.matcher(gradleDepCopy!!)
 
     val mavenBuilder = StringBuilder()
@@ -81,7 +84,7 @@ fun captureMavenDependencies(): CharSequence {
         mvnDep = mvnDep.replace("%2%", tokenizer.nextToken())
         mvnDep = mvnDep.replace("%3%", tokenizer.nextToken())
 
-        PluginUtil.log("mvn dep = ${mvnDep}")
+        PluginUtil.log("mvn dep = $mvnDep")
 
         var scope = "compile"
         when (type) {
@@ -95,7 +98,7 @@ fun captureMavenDependencies(): CharSequence {
         }
         mavenBuilder.append(mvnDep.replace("%4%", scope))
 
-        PluginUtil.log("maven dependency added $mvnDep")
+        PluginUtil.log("maven dependency found: $mvnDep")
     }
 
     if (mavenBuilder.isNotEmpty())
@@ -106,6 +109,6 @@ fun captureMavenDependencies(): CharSequence {
 }
 
 fun isValidGradleDependency(contents: String): Boolean {
-    var checkPattern = Pattern.compile("(\\s*(\\w+)\\s+'([A-Za-z0-9-:.]+)')+")
-    return contents.matches(checkPattern.toRegex())
+    val checkPattern = "\\s*(\\w+)\\s+([\"|'][A-Za-z0-9-:.]+[\"|'])"
+    return contents.matches(checkPattern.toRegex(RegexOption.MULTILINE))
 }
