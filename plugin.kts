@@ -110,5 +110,6 @@ fun captureMavenDependencies(): CharSequence {
 
 fun isValidGradleDependency(contents: String): Boolean {
     val checkPattern = "\\s*(\\w+)\\s+([\"|'][A-Za-z0-9-:.]+[\"|'])"
-    return contents.matches(checkPattern.toRegex(RegexOption.MULTILINE))
+    return checkPattern.toRegex(RegexOption.MULTILINE).containsMatchIn(contents)
 }
+
